@@ -5,18 +5,41 @@ services:
 
     # Nginx Service
     nginx:
-        image: nginx:1.21
+        image: nginx:1.21       # pull this specific image
         ports:
-            - 80:80
-        volumes:
-            - ./src:/var/www/php
+            - 80:80             # listen to this port
+        volumes:                # similar to shared folders
+            - ./src:/var/www/php        # where the source code is
             - ./.docker/nginx/conf.d:/etc/nginx/conf.d
-        depends_on:
-            - php
+        depends_on:             # wait for another container to be up before this one
+            - php               # do not spin up this container until "php" container is spun up
 
-    # PHP
+    # PHP Service
     php:
-        image: php:8.1-fpm
+        build: ./.docker/php        # instead of the official php image use the Dockerfile located here to build a new image
         working_dir: /var/www/php
         volumes:
             - ./src:/var/www/php
+        depends_on:
+            mysql:
+                condition: service_healthy      # wait for not only the mysql container to be ready but also for the database to be fully set up
+
+    # MySQL Service
+    mysql:
+        image: mysql:latest
+        environment:                # environment variables that will be in the container
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_ROOT_HOST: "%"
+            MYSQL_DATABASE: demo
+        volumes:
+            - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+            - mysqldata:/var/lib/mysql
+        healthcheck:            # specify when the container is up and ready to be used
+            test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MYSQL_ROOT_PASSWORD
+            interval: 5s
+            retries: 10
+
+# Volumes
+volumes:            # creates persistent volume for the database
+
+    mysqldata:      # mysql database will store data here locally
