@@ -5,14 +5,16 @@ services:
 
     # Nginx Service
     nginx:
-        image: nginx:1.21       # pull this specific image
+        image: nginx:1.21-alpine       # pull this specific image
         ports:
             - 80:80             # listen to this port
         volumes:                # similar to shared folders
             - ./src:/var/www/php        # where the source code is
             - ./.docker/nginx/conf.d:/etc/nginx/conf.d
+            - phpmyadmindata:/var/www/phpmyadmin
         depends_on:             # wait for another container to be up before this one
             - php               # do not spin up this container until "php" container is spun up
+            - phpmyadmin
 
     # PHP Service
     php:
@@ -41,11 +43,13 @@ services:
 
     # PhpMyAdmin
     phpmyadmin:
-        image: phpmyadmin/phpmyadmin:5
-        ports:
-            - 8080:80
+        image: phpmyadmin/phpmyadmin:5-fpm-alpine
+        #ports:
+        #    - 8080:80
         environment:
             PMA_HOST: mysql
+        volumes:
+            - phpmyadmindata:/var/www/html
         depends_on:
             mysql:
                 condition: service_healthy
@@ -54,3 +58,5 @@ services:
 volumes:            # creates persistent volume for the database
 
     mysqldata:      # mysql database will store data here locally
+
+    phpmyadmindata: # phpmyadmin will store data here locally
