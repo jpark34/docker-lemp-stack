@@ -9,22 +9,25 @@ services:
         ports:
             - 80:80             # listen to this port
         volumes:                # similar to shared folders
-            - ./src:/var/www/php        # where the source code is
+            - ./src:/backend:/var/www/backend        # where the source code is
             - ./.docker/nginx/conf.d:/etc/nginx/conf.d
             - phpmyadmindata:/var/www/phpmyadmin
         depends_on:             # wait for another container to be up before this one
-            - php               # do not spin up this container until "php" container is spun up
+            - backend               # do not spin up this container until "php" container is spun up
             - phpmyadmin
 
-    # PHP Service
-    php:
-        build: ./.docker/php        # instead of the official php image use the Dockerfile located here to build a new image
-        working_dir: /var/www/php
+    # Backend Service
+    backend:
+        build:
+            context: ./src/backend
+            args:
+                HOST_UID: $HOST_UID
+        working_dir: /var/www/backend
         volumes:
-            - ./src:/var/www/php
+            - ./src/backend:/var/www/backend
         depends_on:
             mysql:
-                condition: service_healthy      # wait for not only the mysql container to be ready but also for the database to be fully set up
+                condition: service_healthy
 
     # MySQL Service
     mysql:
